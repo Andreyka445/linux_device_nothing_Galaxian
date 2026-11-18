@@ -60,3 +60,19 @@ Without proprietary Mali-G615 OpenCL/Vulkan drivers in pure Linux:
 
 ### F. On-Screen Keyboard
 `wvkbd-mobintl` operates via Wayland `zwlr_layer_shell_v1` and `zwp_virtual_keyboard_v1`. It has zero GNOME schema dependencies and provides instant, zero-latency touch typing.
+
+---
+
+## 3. Known Limitations & Roadmap
+
+1. **Audio / Sound:**
+   - Sound hardware is currently controlled by Android's audio HAL (`android.hardware.audio.service`).
+   - Pure ALSA/PipeWire routing requires binding into MediaTek Audio Front End (AFE) nodes under `/dev/snd/`.
+2. **Wi-Fi Networking:**
+   - Linux processes running in Android chroot lack the Android supplementary group `AID_INET` (gid 3003), which causes the kernel firewall to reject raw and TCP/UDP sockets (`Network unreachable`).
+   - Fix in progress: Add supplementary group `3003` to chroot users or establish `iptables` nat/forward rules.
+3. **Cellular / Mobile Network:**
+   - The modem is bound to Android's `ccci` and RILD daemons (`ccmni*` interfaces). Direct Linux cellular requires ModemManager integration with Android RILD / mbim proxy.
+4. **Files App (Nautilus):**
+   - GNOME Files crashes on startup because GVFS daemons (`gvfsd`, `gvfsd-fuse`) and `tracker-miners` are designed for unprivileged user sessions rather than direct root execution.
+   - Recommended temporary alternative: lightweight file managers like `pcmanfm` or CLI managers like `mc` / `ranger`.
