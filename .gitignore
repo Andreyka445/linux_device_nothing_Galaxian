@@ -1,0 +1,6 @@
+*.img
+*.iso
+*.tar.gz
+*.log
+.DS_Store
+Thumbs.db
