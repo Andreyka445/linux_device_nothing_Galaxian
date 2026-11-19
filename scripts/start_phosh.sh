@@ -3,9 +3,13 @@
 # Nothing Phone (3a) Lite (Galaxian / MT6878) - PostmarketOS Phosh Launcher
 # ==============================================================================
 
-# 1. SELinux & Keep CPU awake
+# 1. SELinux, Keep CPU awake & Immune to Android OOM Killer
 setenforce 0 2>/dev/null
 echo "pmos_stay_awake" > /sys/power/wake_lock 2>/dev/null
+echo -1000 > /proc/$$/oom_score_adj 2>/dev/null
+
+# Ignore SIGHUP so Termux going to background never kills Linux
+trap '' HUP INT QUIT
 
 PMOS_DIR="/data/pmos"
 IMG_PATH="/data/pmos_files/pmos_phosh.img"
@@ -107,6 +111,7 @@ pipewire-pulse &
 wireplumber &
 
 dbus-run-session -- sh -c "
+trap '' HUP
 gsettings set org.gnome.desktop.interface enable-animations false 2>/dev/null
 gsettings set org.gnome.desktop.session idle-delay 0 2>/dev/null
 gsettings set org.gnome.settings-daemon.plugins.power power-button-action \"nothing\" 2>/dev/null
