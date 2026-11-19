@@ -36,6 +36,13 @@ fi
 # 3. Permissions for DRM, Input, Audio
 chmod 666 "$PMOS_DIR/dev/dri/"* "$PMOS_DIR/dev/input/"* "$PMOS_DIR/dev/snd/"* 2>/dev/null
 
+# Ensure /dev/shm tmpfs is mounted (required for Wayland / Squeekboard POSIX shared memory keymap fds)
+mkdir -p "$PMOS_DIR/dev/shm"
+if ! grep -q "$PMOS_DIR/dev/shm " /proc/mounts; then
+    mount -t tmpfs tmpfs "$PMOS_DIR/dev/shm" 2>/dev/null
+    chmod 1777 "$PMOS_DIR/dev/shm" 2>/dev/null
+fi
+
 # 4. Always ensure runtime directory exists with 0700 permissions
 mkdir -p "$PMOS_DIR/tmp/runtime-root"
 chmod 0700 "$PMOS_DIR/tmp/runtime-root"
