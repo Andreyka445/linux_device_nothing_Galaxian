@@ -143,6 +143,13 @@ wireplumber &
     done
 ) &
 
+# Ensure Squeekboard D-Bus service and autostart exist
+mkdir -p /usr/share/dbus-1/services /etc/xdg/autostart
+echo "[D-BUS Service]" > /usr/share/dbus-1/services/sm.puri.OSK0.service
+echo "Name=sm.puri.OSK0" >> /usr/share/dbus-1/services/sm.puri.OSK0.service
+echo "Exec=/usr/bin/squeekboard" >> /usr/share/dbus-1/services/sm.puri.OSK0.service
+cp -f /usr/share/applications/sm.puri.OSK0.desktop /etc/xdg/autostart/sm.puri.OSK0.desktop 2>/dev/null
+
 dbus-run-session -- sh -c "
 trap \"\" HUP
 gsettings set org.gnome.desktop.interface enable-animations false 2>/dev/null
@@ -152,12 +159,6 @@ gsettings set org.gnome.settings-daemon.plugins.power power-button-action \"noth
 # Configure on-screen keyboard (auto-pops up on input focus or bottom bar tap)
 gsettings set org.gnome.desktop.input-sources sources \"[('xkb', 'us'), ('xkb', 'ru')]\" 2>/dev/null
 gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true 2>/dev/null
-
-mkdir -p /usr/share/dbus-1/services /etc/xdg/autostart
-echo '[D-BUS Service]' > /usr/share/dbus-1/services/sm.puri.OSK0.service
-echo 'Name=sm.puri.OSK0' >> /usr/share/dbus-1/services/sm.puri.OSK0.service
-echo 'Exec=/usr/bin/squeekboard' >> /usr/share/dbus-1/services/sm.puri.OSK0.service
-cp -f /usr/share/applications/sm.puri.OSK0.desktop /etc/xdg/autostart/sm.puri.OSK0.desktop 2>/dev/null
 
 # Launch Squeekboard
 (sleep 2; squeekboard >/tmp/squeekboard.log 2>&1) &
