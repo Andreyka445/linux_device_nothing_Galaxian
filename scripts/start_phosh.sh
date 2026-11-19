@@ -56,10 +56,15 @@ for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
     echo performance > "$cpu" 2>/dev/null
 done
 
-# 7. Detach Android display server to free DRM_MASTER
-echo "[*] Stopping Android SurfaceFlinger and HWComposer..."
+# 7. Detach Android display server & freeze system_server to prevent Watchdog reboot
+echo "[*] Freezing Android system_server & surfaceflinger..."
+SS_PID=$(pidof system_server)
+SF_PID=$(pidof surfaceflinger)
+kill -STOP $SS_PID 2>/dev/null
+kill -STOP $SF_PID 2>/dev/null
+
+echo "[*] Stopping Android HWComposer..."
 stop vendor.hwcomposer-3-2
-stop surfaceflinger
 pkill -STOP -f "composer@3.2"
 
 # 8. Enable AMOLED display and set comfortable brightness
@@ -107,11 +112,13 @@ sleep 1
 
 # Start PipeWire audio servers
 pipewire &
+sleep 1
 pipewire-pulse &
+sleep 1
 wireplumber &
 
 dbus-run-session -- sh -c "
-trap '' HUP
+trap \"\" HUP
 gsettings set org.gnome.desktop.interface enable-animations false 2>/dev/null
 gsettings set org.gnome.desktop.session idle-delay 0 2>/dev/null
 gsettings set org.gnome.settings-daemon.plugins.power power-button-action \"nothing\" 2>/dev/null
@@ -127,7 +134,11 @@ phoc -C /etc/phoc.ini -E /usr/libexec/phosh >/tmp/phoc.log 2>&1
 kill -9 "$BRIGHT_PID" 2>/dev/null
 pkill -9 -f "brightnessid" 2>/dev/null
 killall -9 phoc phosh wvkbd seatd pipewire pipewire-pulse wireplumber 2>/dev/null
+
+# Restore Android display and system
+echo "[*] Restoring Android system..."
 pkill -CONT -f "composer@3.2" 2>/dev/null
 start vendor.hwcomposer-3-2
-start surfaceflinger
-echo "[+] Android display restored!"
+kill -CONT $SF_PID 2>/dev/null
+kill -CONT $SS_PID 2>/dev/null
+echo "[+] Android display and system restored!"
