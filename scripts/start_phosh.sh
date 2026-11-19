@@ -25,9 +25,19 @@ if ! grep -q "$PMOS_DIR " /proc/mounts; then
     mount -t tmpfs tmpfs "$PMOS_DIR/run"
     mount -t tmpfs tmpfs "$PMOS_DIR/tmp"
     chmod 1777 "$PMOS_DIR/tmp" "$PMOS_DIR/dev/shm" "$PMOS_DIR/data/local/tmp"
+    mkdir -p "$PMOS_DIR/tmp/runtime-root"
+    chmod 0700 "$PMOS_DIR/tmp/runtime-root"
 fi
 
-# 3. Configure udev database (assign FocalTech touch to seat0, isolate power button)
+# 3. Permissions for DRM, Input, Audio
+chmod 666 "$PMOS_DIR/dev/dri/"* "$PMOS_DIR/dev/input/"* "$PMOS_DIR/dev/snd/"* 2>/dev/null
+
+# 4. Always ensure runtime directory exists with 0700 permissions
+mkdir -p "$PMOS_DIR/tmp/runtime-root"
+chmod 0700 "$PMOS_DIR/tmp/runtime-root"
+rm -f "$PMOS_DIR/tmp/runtime-root/wayland-*" "$PMOS_DIR/tmp/runtime-root/pulse/native" "$PMOS_DIR/run/seatd.sock" 2>/dev/null
+
+# 5. Configure udev database (assign FocalTech touch to seat0, isolate power button)
 mkdir -p "$PMOS_DIR/run/udev/data"
 cat << 'UDEV' > "$PMOS_DIR/run/udev/data/c13:67"
 E:ID_INPUT=1
@@ -37,18 +47,19 @@ E:WL_OUTPUT=DSI-1
 UDEV
 rm -f "$PMOS_DIR/run/udev/data/c13:64" "$PMOS_DIR/run/udev/data/c13:65" "$PMOS_DIR/run/udev/data/c13:66" "$PMOS_DIR/run/udev/data/c13:68" 2>/dev/null
 
-# 4. CPU performance boost (all 8 cores)
+# 6. CPU performance boost (all 8 cores)
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
     echo performance > "$cpu" 2>/dev/null
 done
 
-# 5. Detach Android display server to free DRM_MASTER
+# 7. Detach Android display server to free DRM_MASTER & freeze Android watchdog
 echo "[*] Stopping Android SurfaceFlinger and HWComposer..."
 stop vendor.hwcomposer-3-2
 stop surfaceflinger
 pkill -STOP -f "composer@3.2"
+pkill -STOP -f "system_server"
 
-# 6. Enable AMOLED display and set comfortable brightness
+# 8. Enable AMOLED display and set comfortable brightness
 echo On > /sys/class/drm/card0-DSI-1/dpms 2>/dev/null
 echo 2600 > /sys/devices/platform/display_id/brightnessid
 
@@ -65,7 +76,7 @@ killall -9 phoc phosh wvkbd
 CMD
 chmod +x "$PMOS_DIR/usr/bin/android"
 
-# 7. Launch Phosh environment
+# 9. Launch Phosh environment
 echo "[*] Launching Phosh (Wayland)..."
 chroot "$PMOS_DIR" /bin/sh -c '
 export PATH=/usr/libexec:/bin:/usr/bin:/sbin:/usr/sbin
@@ -87,9 +98,14 @@ mkdir -p /var/run/dbus /run/dbus
 dbus-uuidgen --ensure 2>/dev/null
 dbus-daemon --system --fork 2>/dev/null
 
-pkill -9 seatd squeekboard wvkbd 2>/dev/null
+pkill -9 seatd squeekboard wvkbd pipewire pipewire-pulse wireplumber 2>/dev/null
 seatd -u root -g root &
 sleep 1
+
+# Start PipeWire audio servers
+pipewire &
+pipewire-pulse &
+wireplumber &
 
 dbus-run-session -- sh -c "
 gsettings set org.gnome.desktop.interface enable-animations false 2>/dev/null
@@ -103,10 +119,11 @@ phoc -C /etc/phoc.ini -E /usr/libexec/phosh
 "
 '
 
-# 8. Clean up and restore Android automatically upon Phosh exit
+# 10. Clean up and restore Android automatically upon Phosh exit
 kill -9 "$BRIGHT_PID" 2>/dev/null
 pkill -9 -f "brightnessid" 2>/dev/null
-killall -9 phoc phosh wvkbd seatd 2>/dev/null
+killall -9 phoc phosh wvkbd seatd pipewire pipewire-pulse wireplumber 2>/dev/null
+pkill -CONT -f "system_server" 2>/dev/null
 pkill -CONT -f "composer@3.2" 2>/dev/null
 start vendor.hwcomposer-3-2
 start surfaceflinger

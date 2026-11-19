@@ -5,9 +5,10 @@
 
 echo "[*] Killing Linux processes..."
 pkill -9 -f "brightnessid" 2>/dev/null
-killall -9 phoc phosh wvkbd squeekboard seatd 2>/dev/null
+killall -9 phoc phosh wvkbd squeekboard seatd pipewire pipewire-pulse wireplumber 2>/dev/null
 
-echo "[*] Waking up Android Graphics Subsystem..."
+echo "[*] Waking up Android Graphics & System Subsystems..."
+pkill -CONT -f "system_server" 2>/dev/null
 pkill -CONT -f "composer@3.2" 2>/dev/null
 start vendor.hwcomposer-3-2
 start surfaceflinger
