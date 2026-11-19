@@ -96,13 +96,25 @@ export LIBSEAT_BACKEND=seatd
 export GSETTINGS_BACKEND=keyfile
 export GSK_RENDERER=cairo
 
-# Enable Hardware Speaker Amplifier & Volume
+# Enable Hardware Speaker Routing, I2S Amplifiers & Volume
 amixer -c 0 cset name="Ext_Speaker_Amp Switch" 1 2>/dev/null
-amixer -c 0 cset name="LOL Mux" 2 2>/dev/null
 amixer -c 0 cset name="DAC In Mux" 0 2>/dev/null
+amixer -c 0 cset name="LOL Mux" 2 2>/dev/null
+amixer -c 0 cset name="HPL Mux" 1 2>/dev/null
+amixer -c 0 cset name="HPR Mux" 1 2>/dev/null
 amixer -c 0 cset name="ADDA_DL_CH1 DL0_CH1" 1 2>/dev/null
 amixer -c 0 cset name="ADDA_DL_CH2 DL0_CH2" 1 2>/dev/null
+amixer -c 0 cset name="I2SOUT1_CH1 DL0_CH1" 1 2>/dev/null
+amixer -c 0 cset name="I2SOUT1_CH2 DL0_CH2" 1 2>/dev/null
+amixer -c 0 cset name="I2SOUT2_CH1 DL0_CH1" 1 2>/dev/null
+amixer -c 0 cset name="I2SOUT2_CH2 DL0_CH2" 1 2>/dev/null
+amixer -c 0 cset name="I2SOUT4_CH1 DL0_CH1" 1 2>/dev/null
+amixer -c 0 cset name="I2SOUT4_CH2 DL0_CH2" 1 2>/dev/null
+amixer -c 0 cset name="TFA Profile" 0 2>/dev/null
+amixer -c 0 cset name="TFA Stop" 0 2>/dev/null
 amixer -c 0 sset "Lineout Volume" 100% 2>/dev/null
+amixer -c 0 sset "Headset Volume" 100% 2>/dev/null
+amixer -c 0 sset "Handset Volume" 100% 2>/dev/null
 
 mkdir -p /var/run/dbus /run/dbus
 dbus-uuidgen --ensure 2>/dev/null
@@ -119,14 +131,36 @@ pipewire-pulse &
 sleep 1
 wireplumber &
 
+# Unmute PipeWire audio sinks and set 100% volume
+(
+    sleep 4
+    wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.0 2>/dev/null
+    pactl set-sink-mute @DEFAULT_SINK@ 0 2>/dev/null
+    pactl set-sink-volume @DEFAULT_SINK@ 100% 2>/dev/null
+    for s in $(pactl list short sinks 2>/dev/null | cut -f1); do
+        pactl set-sink-mute "$s" 0 2>/dev/null
+        pactl set-sink-volume "$s" 100% 2>/dev/null
+    done
+) &
+
 dbus-run-session -- sh -c "
 trap \"\" HUP
 gsettings set org.gnome.desktop.interface enable-animations false 2>/dev/null
 gsettings set org.gnome.desktop.session idle-delay 0 2>/dev/null
 gsettings set org.gnome.settings-daemon.plugins.power power-button-action \"nothing\" 2>/dev/null
 
-# Launch on-demand on-screen keyboard (auto-pops up on input focus or bottom bar tap)
-(sleep 3; squeekboard >/tmp/squeekboard.log 2>&1) &
+# Configure on-screen keyboard (auto-pops up on input focus or bottom bar tap)
+gsettings set org.gnome.desktop.input-sources sources \"[('xkb', 'us'), ('xkb', 'ru')]\" 2>/dev/null
+gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true 2>/dev/null
+
+mkdir -p /usr/share/dbus-1/services /etc/xdg/autostart
+echo '[D-BUS Service]' > /usr/share/dbus-1/services/sm.puri.OSK0.service
+echo 'Name=sm.puri.OSK0' >> /usr/share/dbus-1/services/sm.puri.OSK0.service
+echo 'Exec=/usr/bin/squeekboard' >> /usr/share/dbus-1/services/sm.puri.OSK0.service
+cp -f /usr/share/applications/sm.puri.OSK0.desktop /etc/xdg/autostart/sm.puri.OSK0.desktop 2>/dev/null
+
+# Launch Squeekboard
+(sleep 2; squeekboard >/tmp/squeekboard.log 2>&1) &
 
 phoc -C /etc/phoc.ini -E /usr/libexec/phosh >/tmp/phoc.log 2>&1
 " >/tmp/session.log 2>&1
