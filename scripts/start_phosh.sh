@@ -56,13 +56,7 @@ for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
     echo performance > "$cpu" 2>/dev/null
 done
 
-# 7. Detach Android display server & freeze system_server to prevent Watchdog reboot
-echo "[*] Freezing Android system_server & surfaceflinger..."
-SS_PID=$(pidof system_server)
-SF_PID=$(pidof surfaceflinger)
-kill -STOP $SS_PID 2>/dev/null
-kill -STOP $SF_PID 2>/dev/null
-
+# 7. Detach Android display server to free DRM_MASTER
 echo "[*] Stopping Android HWComposer..."
 stop vendor.hwcomposer-3-2
 pkill -STOP -f "composer@3.2"
@@ -80,7 +74,7 @@ BRIGHT_PID=$!
 cat << 'CMD' > "$PMOS_DIR/usr/bin/android"
 #!/bin/sh
 echo "Returning to Android..."
-killall -9 phoc phosh wvkbd
+killall -9 phoc phosh squeekboard wvkbd
 CMD
 chmod +x "$PMOS_DIR/usr/bin/android"
 
@@ -101,6 +95,14 @@ export SEATD_VTBOUND=0
 export LIBSEAT_BACKEND=seatd
 export GSETTINGS_BACKEND=keyfile
 export GSK_RENDERER=cairo
+
+# Enable Hardware Speaker Amplifier & Volume
+amixer -c 0 cset name="Ext_Speaker_Amp Switch" 1 2>/dev/null
+amixer -c 0 cset name="LOL Mux" 2 2>/dev/null
+amixer -c 0 cset name="DAC In Mux" 0 2>/dev/null
+amixer -c 0 cset name="ADDA_DL_CH1 DL0_CH1" 1 2>/dev/null
+amixer -c 0 cset name="ADDA_DL_CH2 DL0_CH2" 1 2>/dev/null
+amixer -c 0 sset "Lineout Volume" 100% 2>/dev/null
 
 mkdir -p /var/run/dbus /run/dbus
 dbus-uuidgen --ensure 2>/dev/null
@@ -123,8 +125,8 @@ gsettings set org.gnome.desktop.interface enable-animations false 2>/dev/null
 gsettings set org.gnome.desktop.session idle-delay 0 2>/dev/null
 gsettings set org.gnome.settings-daemon.plugins.power power-button-action \"nothing\" 2>/dev/null
 
-# Launch on-screen keyboard (docked at bottom, 320px height)
-(sleep 4; wvkbd -H 320 --bg 1a1a1a --fg 333333 --text ffffff >/dev/null 2>&1) &
+# Launch on-demand on-screen keyboard (auto-pops up on input focus or bottom bar tap)
+(sleep 3; squeekboard >/tmp/squeekboard.log 2>&1) &
 
 phoc -C /etc/phoc.ini -E /usr/libexec/phosh >/tmp/phoc.log 2>&1
 " >/tmp/session.log 2>&1
@@ -133,12 +135,10 @@ phoc -C /etc/phoc.ini -E /usr/libexec/phosh >/tmp/phoc.log 2>&1
 # 10. Clean up and restore Android automatically upon Phosh exit
 kill -9 "$BRIGHT_PID" 2>/dev/null
 pkill -9 -f "brightnessid" 2>/dev/null
-killall -9 phoc phosh wvkbd seatd pipewire pipewire-pulse wireplumber 2>/dev/null
+killall -9 phoc phosh squeekboard wvkbd seatd pipewire pipewire-pulse wireplumber 2>/dev/null
 
-# Restore Android display and system
-echo "[*] Restoring Android system..."
+# Restore Android display
+echo "[*] Restoring Android display..."
 pkill -CONT -f "composer@3.2" 2>/dev/null
 start vendor.hwcomposer-3-2
-kill -CONT $SF_PID 2>/dev/null
-kill -CONT $SS_PID 2>/dev/null
-echo "[+] Android display and system restored!"
+echo "[+] Android display restored!"
