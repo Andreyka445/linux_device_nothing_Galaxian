@@ -113,10 +113,10 @@ gsettings set org.gnome.desktop.session idle-delay 0 2>/dev/null
 gsettings set org.gnome.settings-daemon.plugins.power power-button-action \"nothing\" 2>/dev/null
 
 # Launch on-screen keyboard (docked at bottom, 320px height)
-(sleep 4; wvkbd -H 320 --bg 1a1a1a --fg 333333 --text ffffff) &
+(sleep 4; wvkbd -H 320 --bg 1a1a1a --fg 333333 --text ffffff >/dev/null 2>&1) &
 
-phoc -C /etc/phoc.ini -E /usr/libexec/phosh
-"
+phoc -C /etc/phoc.ini -E /usr/libexec/phosh >/tmp/phoc.log 2>&1
+" >/tmp/session.log 2>&1
 '
 
 # 10. Clean up and restore Android automatically upon Phosh exit
