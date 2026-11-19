@@ -52,12 +52,11 @@ for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
     echo performance > "$cpu" 2>/dev/null
 done
 
-# 7. Detach Android display server to free DRM_MASTER & freeze Android watchdog
+# 7. Detach Android display server to free DRM_MASTER
 echo "[*] Stopping Android SurfaceFlinger and HWComposer..."
 stop vendor.hwcomposer-3-2
 stop surfaceflinger
 pkill -STOP -f "composer@3.2"
-pkill -STOP -f "system_server"
 
 # 8. Enable AMOLED display and set comfortable brightness
 echo On > /sys/class/drm/card0-DSI-1/dpms 2>/dev/null
@@ -123,7 +122,6 @@ phoc -C /etc/phoc.ini -E /usr/libexec/phosh >/tmp/phoc.log 2>&1
 kill -9 "$BRIGHT_PID" 2>/dev/null
 pkill -9 -f "brightnessid" 2>/dev/null
 killall -9 phoc phosh wvkbd seatd pipewire pipewire-pulse wireplumber 2>/dev/null
-pkill -CONT -f "system_server" 2>/dev/null
 pkill -CONT -f "composer@3.2" 2>/dev/null
 start vendor.hwcomposer-3-2
 start surfaceflinger
