@@ -36,8 +36,14 @@ fi
 # 3. Permissions for DRM, Input, Audio
 chmod 666 "$PMOS_DIR/dev/dri/"* "$PMOS_DIR/dev/input/"* "$PMOS_DIR/dev/snd/"* 2>/dev/null
 
-# Ensure /dev/shm tmpfs is mounted (required for Wayland / Squeekboard POSIX shared memory keymap fds)
-mkdir -p "$PMOS_DIR/dev/shm"
+# Ensure /dev/pts (PTY for terminals) and /dev/shm (POSIX shared memory for Wayland keymaps) are mounted
+mkdir -p "$PMOS_DIR/dev/pts" "$PMOS_DIR/dev/shm"
+if ! grep -q "$PMOS_DIR/dev/pts " /proc/mounts; then
+    mount -t devpts devpts -o rw,nosuid,noexec,relatime,mode=620,ptmxmode=666 "$PMOS_DIR/dev/pts" 2>/dev/null
+fi
+rm -f "$PMOS_DIR/dev/ptmx"
+ln -sf pts/ptmx "$PMOS_DIR/dev/ptmx" 2>/dev/null
+
 if ! grep -q "$PMOS_DIR/dev/shm " /proc/mounts; then
     mount -t tmpfs tmpfs "$PMOS_DIR/dev/shm" 2>/dev/null
     chmod 1777 "$PMOS_DIR/dev/shm" 2>/dev/null
