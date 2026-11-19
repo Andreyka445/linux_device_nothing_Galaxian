@@ -150,11 +150,11 @@ wireplumber &
     done
 ) &
 
-# Ensure Squeekboard D-Bus service and autostart exist
+# Ensure On-Screen Keyboard D-Bus service and autostart exist (Stevia / Phosh OSK)
 mkdir -p /usr/share/dbus-1/services /etc/xdg/autostart
 echo "[D-BUS Service]" > /usr/share/dbus-1/services/sm.puri.OSK0.service
 echo "Name=sm.puri.OSK0" >> /usr/share/dbus-1/services/sm.puri.OSK0.service
-echo "Exec=/usr/bin/squeekboard" >> /usr/share/dbus-1/services/sm.puri.OSK0.service
+echo "Exec=/usr/bin/phosh-osk-stevia --allow-replacement" >> /usr/share/dbus-1/services/sm.puri.OSK0.service
 cp -f /usr/share/applications/sm.puri.OSK0.desktop /etc/xdg/autostart/sm.puri.OSK0.desktop 2>/dev/null
 
 dbus-run-session -- sh -c "
@@ -167,8 +167,8 @@ gsettings set org.gnome.settings-daemon.plugins.power power-button-action \"noth
 gsettings set org.gnome.desktop.input-sources sources \"[('xkb', 'us'), ('xkb', 'ru')]\" 2>/dev/null
 gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true 2>/dev/null
 
-# Launch Squeekboard
-(sleep 2; squeekboard >/tmp/squeekboard.log 2>&1) &
+# Launch Phosh OSK (Stevia - native terminal, browser & GTK4 typing support)
+(sleep 2; phosh-osk-stevia --allow-replacement >/tmp/osk.log 2>&1) &
 
 phoc -C /etc/phoc.ini -E /usr/libexec/phosh >/tmp/phoc.log 2>&1
 " >/tmp/session.log 2>&1
@@ -177,7 +177,7 @@ phoc -C /etc/phoc.ini -E /usr/libexec/phosh >/tmp/phoc.log 2>&1
 # 10. Clean up and restore Android automatically upon Phosh exit
 kill -9 "$BRIGHT_PID" 2>/dev/null
 pkill -9 -f "brightnessid" 2>/dev/null
-killall -9 phoc phosh squeekboard wvkbd seatd pipewire pipewire-pulse wireplumber 2>/dev/null
+killall -9 phoc phosh squeekboard phosh-osk-stevia wvkbd seatd pipewire pipewire-pulse wireplumber 2>/dev/null
 
 # Restore Android display
 echo "[*] Restoring Android display..."
