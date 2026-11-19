@@ -101,13 +101,16 @@ export TEMP=/tmp
 export TMP=/tmp
 export XDG_RUNTIME_DIR=/tmp/runtime-root
 export XDG_DATA_DIRS=/usr/share:/usr/local/share
-export WLR_RENDERER=pixman
+export WLR_RENDERER=gles2
+export WLR_RENDERER_ALLOW_SOFTWARE=1
 export WLR_NO_HARDWARE_CURSORS=1
 export WLR_DRM_DEVICES=/dev/dri/card0
 export SEATD_VTBOUND=0
 export LIBSEAT_BACKEND=seatd
 export GSETTINGS_BACKEND=keyfile
-export GSK_RENDERER=cairo
+export GSK_RENDERER=gl
+export LP_NUM_THREADS=8
+export mesa_glthread=true
 
 # Enable Hardware Speaker Routing, I2S Amplifiers & Volume
 amixer -c 0 cset name="Ext_Speaker_Amp Switch" 1 2>/dev/null
