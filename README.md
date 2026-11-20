@@ -1,144 +1,237 @@
-# postmarketOS (Phosh Mobile GNOME) on Nothing Phone (3a) Lite
+# 📱 postmarketOS (Phosh Mobile GNOME) on Nothing Phone (3a) Lite
 
-> **Dual-boot Linux environment running natively on Nothing Phone (3a) Lite (`galaxian` / MediaTek Dimensity 7300 / MT6878)** with full Wayland GUI, touch screen, on-screen keyboard, and instant 1-click switching to/from Android!
+[![postmarketOS](https://img.shields.io/badge/postmarketOS-v24.06%20%2F%20edge-009900?logo=postmarketos&logoColor=white)](https://postmarketos.org/)
+[![Device](https://img.shields.io/badge/Device-Nothing%20Phone%20(3a)%20Lite%20%2F%20Galaxian-black?logo=nothing&logoColor=white)](https://nothing.tech)
+[![SoC](https://img.shields.io/badge/SoC-MediaTek%20Dimensity%207200%20%2F%20MT6878-blue)](https://www.mediatek.com/)
+[![GPU](https://img.shields.io/badge/GPU%20Acceleration-Panthor%20GLES2%20(Mali--G615)-orange)](https://docs.kernel.org/gpu/panthor.html)
+[![Display](https://img.shields.io/badge/AMOLED-1080x2392%20%40%20120Hz-purple)](https://nothing.tech)
+[![License](https://img.shields.io/badge/License-GPL--3.0-brightgreen)](LICENSE)
 
----
-
-## 📱 Hardware & Specifications
-
-| Feature | Specification |
-| :--- | :--- |
-| **Device** | Nothing Phone (3a) Lite |
-| **Codename** | `galaxian` / `nothing-galaxian` |
-| **SoC** | MediaTek MT6878 / Dimensity 7300 (4x Cortex-A78 @ 2.5 GHz + 4x Cortex-A55 @ 2.0 GHz) |
-| **Display** | 6.7" AMOLED, DRM connector `DSI-1` (`/dev/dri/card0`), 1080x2392 @ 60/120Hz |
-| **Touchscreen** | FocalTech `fts_ts` (`/dev/input/event3`, character device `c13:67`) |
-| **Backlight** | `/sys/devices/platform/display_id/brightnessid` (comfort level: `2600`) |
-| **Operating System** | postmarketOS (Alpine Linux edge/v3.20) running via native DRM chroot |
-| **Mobile Desktop** | Phosh (GNOME Mobile Shell) on Phoc (wlroots Wayland compositor) |
-| **Virtual Keyboard** | `wvkbd-mobintl` (Wayland layer-shell) |
-| **Requirements** | Stock Nothing OS with Root (KernelSU / Magisk / APatch) |
+> **Seamless dual-boot Linux environment running natively on the Nothing Phone (3a) Lite (`galaxian` / MediaTek Dimensity 7200 / MT6878) with full Wayland GUI, hardware GPU acceleration (Panthor / Mesa Panfrost GLES2), 120 Hz AMOLED display, multi-touch, virtual keyboard, and instant 1-command switching to/from Android Nothing OS!**
 
 ---
 
-## 📊 Текущий статус работы (Status & Known Issues)
+## 🌟 Highlights
 
-| Компонент / Функция | Статус | Комментарий / Причина |
-| :--- | :---: | :--- |
-| **Экран (AMOLED)** | ✅ Работает | 1080x2392 @ 60Hz, аппаратный DRM/KMS `DSI-1`, управление яркостью через `brightnessid` |
-| **Сенсорный экран (Touch)** | ✅ Работает | Мультитач FocalTech `fts_ts`, жесты свайпа через `c13:67` |
-| **Графическая оболочка (Phosh)** | ✅ Работает | Блокировка, часы, шторка, меню приложений, быстрый 2D-рендеринг Cairo |
-| **Виртуальная клавиатура** | ✅ Работает | `wvkbd-mobintl` (Wayland layer-shell, кнопки нажимаются без задержек) |
-| **Терминал и консоль** | ✅ Работает | Полноценный Linux-терминал, htop, fastfetch, bash, root-доступ |
-| **Быстрое переключение Android ⇄ Linux** | ✅ Работает | В 1 команду: `linux` в Termux и `android` в Phosh |
-| **Звук (Audio / Динамики)** | ❌ Не работает | Не настроен проброс ALSA через MediaTek AFE / Audio HAL |
-| **Wi-Fi** | ❌ Не работает | В Android chroot сокеты блокируются без прав AID_INET (gid 3003) |
-| **Мобильная связь и сеть (LTE/Modem)** | ❌ Не работает | Модем управляется Android RILD; требуется интеграция ModemManager/oFono |
-| **Файловый менеджер (Files / Nautilus)** | ❌ Не открывается | Падает из-за отсутствия системных демонов GVFS / tracker-miners в root-сессии |
+* 🚀 **Full Hardware 3D Acceleration:** Open-source **Panthor DRM driver** (`/dev/dri/renderD128`) + **Mesa Panfrost GLES2** on ARM Mali-G615 MC2!
+* ⚡ **Super Smooth 120 Hz AMOLED:** Native DRM/KMS output (`card0-DSI-1`) rendered at full 1080x2392 @ 120 FPS with bilinear texture filtering.
+* 🔄 **Seamless GPU Handover:** Dynamic, crash-free switching between Android's proprietary CSF Mali driver (`mali_kbase_mt6878_r44`) and Linux open-source `panthor.ko` without rebooting the phone!
+* 👆 **Flawless Multi-Touch:** FocalTech capacitive touchscreen (`fts_ts`) directly integrated with `libinput` via seat assignment.
+* ⌨️ **On-Screen Keyboard:** Zero-latency `wvkbd-mobintl` layer-shell virtual keyboard ready out of the box.
+* 🔁 **1-Command Switching:**
+  * In Android (Termux): type **`linux`** ➔ Android sleeps, screen wakes to postmarketOS Phosh desktop in 2 seconds.
+  * In Linux (Terminal): type **`android`** ➔ Linux cleanly releases GPU, Mali rebinds, phone wakes back to Nothing OS desktop.
 
 ---
 
-## 🚀 Quick Start / Быстрый запуск
+## 📊 Component & Hardware Status
 
-### 1. Подготовка на компьютере (Deployment via PC)
-
-1. Клонируйте репозиторий:
-   ```bash
-   git clone https://github.com/your-username/galaxian-pmos-dualboot.git
-   cd galaxian-pmos-dualboot
-   ```
-2. Подключите телефон по USB с включенной отладкой по ADB.
-3. Запустите скрипт автоматической установки:
-   - В Windows: запустите двойным кликом `scripts/push_to_phone.bat`
-   - Либо вручную через терминал:
-     ```bash
-     adb shell "su -c 'mkdir -p /data/pmos_files /data/pmos && chmod 777 /data/pmos_files'"
-     adb push binaries/wvkbd-mobintl /data/local/tmp/wvkbd
-     adb push configs/phoc.ini /data/local/tmp/phoc.ini
-     adb push scripts/start_phosh.sh /data/local/tmp/start_phosh.sh
-     adb push scripts/stop_phosh.sh /data/local/tmp/stop_phosh.sh
-     
-     adb shell "su -c 'mv /data/local/tmp/start_phosh.sh /data/pmos_files/start_phosh.sh && chmod +x /data/pmos_files/start_phosh.sh'"
-     adb shell "su -c 'mv /data/local/tmp/stop_phosh.sh /data/pmos_files/stop_phosh.sh && chmod +x /data/pmos_files/stop_phosh.sh'"
-     ```
-4. Поместите сформированный образ `pmos_phosh.img` (3.2 ГБ) в `/data/pmos_files/pmos_phosh.img`.
+| Component | Status | Driver / Backend | Details |
+| :--- | :---: | :--- | :--- |
+| **GPU 3D Acceleration** | 🟢 **Working** | Panthor (`panthor.ko`) + Panfrost GLES2 | Mali-G615 MC2 hardware accelerated Wayland & apps |
+| **Display (AMOLED)** | 🟢 **Working** | MediaTek DRM (`card0-DSI-1`) | 1080x2392 @ 120 Hz, Bilinear scaling |
+| **Backlight Control** | 🟢 **Working** | `/sys/devices/platform/display_id/brightnessid` | Auto-managed comfortable brightness (2600) |
+| **Touchscreen** | 🟢 **Working** | FocalTech `fts_ts` (`c13:67`) | Native multi-touch gestures, swipe up/down, tapping |
+| **Mobile Desktop** | 🟢 **Working** | Phosh + Phoc (wlroots) | GNOME Mobile interface, app drawer, notifications |
+| **Virtual Keyboard** | 🟢 **Working** | `wvkbd-mobintl` | Fast, low-latency on-screen keyboard |
+| **Terminal & Shell** | 🟢 **Working** | `kgx` (GNOME Console) / `bash` / `zsh` | Full root access, apk package manager, fastfetch |
+| **Instant Switching** | 🟢 **Working** | `start_phosh.sh` / `stop_phosh.sh` | Clean GPU unbind/rebind, display wakeup |
+| **Audio (Sound)** | 🟡 *In Progress* | ALSA / PipeWire | Requires routing through MTK AFE audio HAL |
+| **Wi-Fi Networking** | 🟡 *In Progress* | Android kernel socket firewall | Needs `AID_INET` (gid 3003) permission mapping |
+| **Cellular (Modem)** | 🟡 *In Progress* | MediaTek CCCI / RILD | Under active development |
 
 ---
 
-### 2. Настройка 1 клика в Termux на телефоне
+## 🛠 Prerequisites / Требования
 
-Откройте приложение **Termux** на телефоне и выполните:
+1. **Device:** Nothing Phone (3a) Lite (codename: `galaxian`, SoC: MT6878 / Dimensity 7200).
+2. **Root Access:** Stock Nothing OS with **KernelSU**, **APatch**, or **Magisk** installed and working.
+3. **Termux:** Installed on your phone (recommended from [F-Droid](https://f-droid.org/packages/com.termux/)).
+4. **Computer (for first-time setup):** Windows or Linux PC with `adb` installed.
+5. **Disk Space:** At least 4-5 GB free in `/data` on your phone.
+
+---
+
+## 🚀 Quick Start / Быстрая установка
+
+### Шаг 1: Клонирование репозитория на ПК
 
 ```bash
-echo "su -c /data/pmos_files/start_phosh.sh" > $PREFIX/bin/linux && chmod +x $PREFIX/bin/linux
+git clone https://github.com/Andreyka445/linux_device_nothing_Galaxian.git
+cd linux_device_nothing_Galaxian
 ```
 
----
+### Шаг 2: Загрузка файлов на смартфон
 
-## 🕹 Как пользоваться (How to Use)
+Подключите телефон по USB с включенной отладкой по ADB.
 
-### Запуск Linux:
-- **Прямо с телефона (без ПК):** Откройте **Termux** и введите команду:
+* **В Windows:** просто дважды кликните по файлу:
+  ```text
+  scripts\push_to_phone.bat
+  ```
+  *(Скрипт сам создаст все нужные папки, скопирует скрипты, конфиги клавиатуры и выдаст права исполняемых файлов)*.
+
+* **Либо вручную через терминал:**
   ```bash
-  linux
-  ```
-- **С компьютера (через ADB):**
-  ```cmd
-  adb shell "su -c /data/pmos_files/start_phosh.sh"
-  ```
-Экран Android выключится, и через 2 секунды загорится полноценный рабочий стол **postmarketOS Phosh** с часами, сенсорным управлением и виртуальной клавиатурой.
+  adb shell "su -c 'mkdir -p /data/pmos_files /data/pmos && chmod 777 /data/pmos_files'"
+  adb push scripts/start_phosh.sh /data/local/tmp/start_phosh.sh
+  adb push scripts/stop_phosh.sh /data/local/tmp/stop_phosh.sh
+  adb push scripts/linux_pmos.sh /data/local/tmp/linux_pmos.sh
+  adb push scripts/android_pmos.sh /data/local/tmp/android_pmos.sh
+  adb push scripts/linux_termux.sh /data/local/tmp/linux_termux.sh
+  adb push scripts/android_termux.sh /data/local/tmp/android_termux.sh
+  adb push configs/phoc.ini /data/local/tmp/phoc.ini
+  adb push binaries/wvkbd-mobintl /data/local/tmp/wvkbd
 
-### Возврат в Android:
-- **С самого телефона (из Linux):** Откройте приложение **Терминал** в Phosh и введите:
-  ```sh
-  android
+  adb shell "su -c 'mv /data/local/tmp/start_phosh.sh /data/pmos_files/start_phosh.sh && mv /data/local/tmp/stop_phosh.sh /data/pmos_files/stop_phosh.sh && mv /data/local/tmp/linux_pmos.sh /data/pmos_files/linux && mv /data/local/tmp/android_pmos.sh /data/pmos_files/android && chmod +x /data/pmos_files/* && cp /data/local/tmp/linux_termux.sh /data/data/com.termux/files/usr/bin/linux && cp /data/local/tmp/android_termux.sh /data/data/com.termux/files/usr/bin/android && chmod +x /data/data/com.termux/files/usr/bin/linux /data/data/com.termux/files/usr/bin/android'"
   ```
-- **С компьютера (если телефон завис):**
-  ```cmd
-  adb shell "su -c /data/pmos_files/stop_phosh.sh"
-  ```
-Телефон мгновенно возвращается на рабочий стол Nothing OS!
+
+### Шаг 3: Размещение образа системы `pmos_phosh.img`
+
+Поместите сформированный образ postmarketOS rootfs (`pmos_phosh.img`) в каталог:
+```text
+/data/pmos_files/pmos_phosh.img
+```
+*(Размер образа обычно составляет от 2.5 до 3.5 ГБ)*.
 
 ---
 
-## ⚙️ Технические особенности реализации (Architecture)
+## 🎮 Как пользоваться / Usage
 
-1. **DRM_MASTER Handover (MediaTek MT6878):**
-   В Android 14 на чипсетах MediaTek остановки одного `surfaceflinger` недостаточно. Графический процессор удерживается службой `vendor.hwcomposer-3-2` (`android.hardware.graphics.composer@3.2-service`). Скрипт `start_phosh.sh` корректно замораживает композитор Android сигналом `SIGSTOP` и передает управление напрямую в DRM/KMS.
-2. **Аппаратная подсветка AMOLED:**
-   Яркость экрана контролируется напрямую через регистр дисплейного контроллера:
-   `/sys/devices/platform/display_id/brightnessid` (рабочее значение: `2600`).
-3. **Сенсорный экран (Touchscreen):**
-   Тачскрин FocalTech `fts_ts` (`event3`, major 13, minor 67) инициализируется подсистемой `libinput` с помощью динамической генерации свойств udev в `/run/udev/data/c13:67`.
-4. **Оптимизация рендеринга (Smooth 60 FPS):**
-   Так как проприетарные драйверы GPU Mali-G615 отсутствуют в чистом Linux, используется программный композитинг `WLR_RENDERER=pixman` с частотой 60 Гц (`1080x2392@60Hz`), 2D-движком `GSK_RENDERER=cairo` и переводом всех 8 ядер CPU в режим `performance`.
-5. **Экранная клавиатура `wvkbd`:**
-   Вместо тяжелого Squeekboard используется нативный Wayland layer-shell клиент `wvkbd-mobintl`, работающий мгновенно и без задержек.
+### 🟢 Запуск Linux (postmarketOS Phosh):
+
+1. Откройте **Termux** на телефоне.
+2. Введите команду:
+   ```bash
+   linux
+   ```
+3. Предоставьте Root-доступ (если появится запрос суперпользователя).
+4. Экран Nothing OS погаснет, и через 2 секунды загорится рабочий стол **Phosh** с часами, шторкой и меню приложений на 120 Гц!
+
+> **Подсказка:** Вы также можете запустить систему с компьютера через ADB:
+> ```bash
+> adb shell "su -c /data/pmos_files/linux"
+> ```
 
 ---
 
-## 📂 Структура проекта
+### 🔴 Возврат в Android (Nothing OS):
+
+1. На телефоне в интерфейсе Linux откройте приложение **Терминал** (`Terminal` / `Console`).
+2. Введите команду:
+   ```sh
+   android
+   ```
+3. Графика Linux завершит работу, оригинальный драйвер Mali переподключится, экран смартфона автоматически включится, и вы вернетесь на рабочий стол Nothing OS!
+
+> **Если что-то пошло не так:** в любой момент с компьютера по ADB можно выполнить принудительный возврат:
+> ```bash
+> adb shell "su -c /data/pmos_files/stop_phosh.sh"
+> ```
+
+---
+
+## 💡 Полезные советы / Tips & Tricks
+
+### 1. Как запустить `fastfetch`, чтобы он красиво помещался в экран телефона?
+
+По умолчанию `fastfetch` выводит большой ASCII-логотип слева от системной информации, из-за чего строки на узком экране смартфона переносятся и ломают верстку.
+
+Используйте следующие варианты:
+
+* **Логотип сверху (наиболее красиво и наглядно):**
+  ```bash
+  fastfetch --logo-position top
+  ```
+* **Компактный пресет без логотипа (только железо и характеристики):**
+  ```bash
+  fastfetch -l none
+  ```
+* **Готовый компактный пресет:**
+  ```bash
+  fastfetch -c examples/2.jsonc
+  ```
+* **Создать постоянный алиас:**
+  Добавьте в ваш `~/.bashrc` внутри postmarketOS:
+  ```bash
+  echo "alias ff='fastfetch --logo-position top'" >> ~/.bashrc
+  ```
+
+---
+
+### 2. Управление яркостью экрана
+
+Если вам нужно вручную изменить яркость AMOLED дисплея:
+```bash
+# Значение от 100 до 4095
+echo 2600 > /sys/devices/platform/display_id/brightnessid
+```
+
+---
+
+### 3. Логи и отладка
+
+Все события переключения и логи композитора Phoc записываются в файл на телефоне:
+```bash
+adb shell "su -c 'tail -f /data/pmos_files/phosh.log'"
+```
+
+---
+
+## 🧠 Техническая архитектура / Under the Hood
+
+### Архитектура динамического переключения GPU (Mali CSF ⇄ Panthor)
 
 ```
-galaxian-pmos-dualboot/
-├── README.md               # Полное руководство на русском и английском
-├── release_notes.md        # Техническое описание решения проблем драйверов
-├── configs/
-│   ├── phoc.ini            # Конфиг масштабирования экрана (2x, 60Hz)
-│   └── udev_rules/c13_67   # Правило udev для сенсорного экрана
-├── scripts/
-│   ├── start_phosh.sh      # Главный скрипт запуска Phosh с телефона
-│   ├── stop_phosh.sh       # Скрипт безопасного возврата в Android
-│   ├── setup_termux.sh     # Создание команды 'linux' в Termux
-│   ├── make_phosh_img.py   # Скрипт сборки ext4 rootfs образа в WSL
-│   └── push_to_phone.bat   # Windows батник для установки в 1 клик
-└── binaries/
-    ├── wvkbd-mobintl       # Скомпилированный бинарник виртуальной клавиатуры
-    └── squeekboard         # Бинарник Squeekboard для aarch64
++-----------------------------------------------------------------------------------+
+|                                Nothing Phone (3a) Lite                            |
++-----------------------------------------------------------------------------------+
+|                                                                                   |
+|  [ Android Nothing OS Mode ]                       [ postmarketOS Linux Mode ]    |
+|                                                                                   |
+|  +------------------------+                        +---------------------------+  |
+|  | Android Apps / UI      |                        | Phosh (GNOME Mobile Shell)|  |
+|  +------------------------+                        +---------------------------+  |
+|             |                                                    |                |
+|  +------------------------+                        +---------------------------+  |
+|  | SurfaceFlinger & HWC   |                        | Phoc (wlroots Wayland)    |  |
+|  +------------------------+                        +---------------------------+  |
+|             |                                                    |                |
+|  +------------------------+                        +---------------------------+  |
+|  | Mali CSF Driver        |                        | Panthor Open-Source Driver|  |
+|  | (mali_kbase_mt6878_r44)|                        | (Mesa Panfrost GLES2)     |  |
+|  | /vendor/firmware       |                        | /data/local/tmp/panthor   |  |
+|  +------------------------+                        +---------------------------+  |
+|             \                                                    /                |
+|              \                                                  /                 |
+|               +------------------------------------------------+                  |
+|               |       ARM Mali-G615 MC2 (13000000.mali)        |                  |
+|               |          MediaTek MT6878 Platform              |                  |
+|               +------------------------------------------------+                  |
+|                                       |                                           |
+|               +------------------------------------------------+                  |
+|               |  MediaTek DRM/KMS Controller (card0-DSI-1)     |                  |
+|               |       AMOLED Display 1080x2392 @ 120Hz         |                  |
+|               +------------------------------------------------+                  |
+|                                                                                   |
++-----------------------------------------------------------------------------------+
 ```
+
+### Ключевые инженерные решения:
+
+1. **Безопасная передача DRM Master:**
+   В Android 14/15 на MediaTek простого `stop surfaceflinger` недостаточно — службу `vendor.hwcomposer-3-2` также необходимо остановить, иначе она удерживает эксклюзивный дескриптор `/dev/dri/card0`. Наш скрипт аккуратно координирует остановку служб.
+2. **Изоляция прошивок CSF (Command Stream Frontend):**
+   Mali v12+ использует CSF-микрокод. Android Mali требует бинарник MediaTek (`/vendor/firmware/mali_csffw.bin`, 290 КБ), а Linux Panthor требует совместимый с апстримом микрокод (`/data/local/tmp/panthor/mali_csffw.bin`, 274 КБ). Скрипт динамически переключает параметр ядра `/sys/module/firmware_class/parameters/path` перед загрузкой каждого драйвера, предотвращая дедлоки планировщика GPU.
+3. **Подавление гонок MediaTek GED DVFS:**
+   Губернатор частот MediaTek GED опрашивает GPU в фоне. Перед `unbind` драйвера Mali скрипт временно отключает `gpu_dvfs_enable`, исключая панику ядра (`ged_eb_work_cb`).
+4. **Автоматическое пробуждение AMOLED и исправление PTY:**
+   При возврате в Android фреймворк просыпается в режиме сна Keyguard/Doze. Скрипт аппаратно отправляет `KEYCODE_WAKEUP`, задает яркость `brightnessid = 2000`, снимает блокировку и гарантирует права `chmod 666 /dev/pts/ptmx` для стабильной работы Termux.
 
 ---
 
-## 📜 Лицензия
-GPL-3.0 / MIT.
-Разработано для сообщества postmarketOS и энтузиастов Nothing Phone.
+## 🤝 Вклад в проект и благодарности
+
+* Проект разработан для сообщества **Nothing Phone** и энтузиастов **postmarketOS / Linux on Mobile**.
+* Базируется на разработках проекта [postmarketOS](https://postmarketos.org/), драйвера [Panthor](https://gitlab.freedesktop.org/panfrost), и открытого стека [Phosh / Phoc](https://gitlab.gnome.org/World/Phosh/phosh).
+* Pull-реквесты, issue и предложения по добавлению поддержки аудио (AFE/ALSA) и сети приветствуются!

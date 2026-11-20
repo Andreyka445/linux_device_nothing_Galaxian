@@ -8,6 +8,12 @@ setenforce 0 2>/dev/null
 echo "pmos_stay_awake" > /sys/power/wake_lock 2>/dev/null
 echo -1000 > /proc/$$/oom_score_adj 2>/dev/null
 
+# Wait for Android to settle if it was recently started
+while [ "$(getprop sys.boot_completed)" != "1" ]; do
+    echo "[*] Waiting for Android boot to complete..."
+    sleep 2
+done
+
 # Ignore SIGHUP so Termux going to background never kills Linux
 trap '' HUP INT QUIT
 
@@ -69,13 +75,46 @@ for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
     echo performance > "$cpu" 2>/dev/null
 done
 
-# 7. Detach Android display server to free DRM_MASTER
-echo "[*] Stopping Android HWComposer..."
-stop vendor.hwcomposer-3-2
-pkill -STOP -f "composer@3.2"
+# 7. Gracefully stop Android UI, Zygote and HWComposer
+# Disable GED DVFS during switch to prevent background frequency governor race
+echo 0 > /sys/module/ged/parameters/gpu_dvfs_enable 2>/dev/null
+echo 0 > /sys/module/ged/parameters/ged_boost_enable 2>/dev/null
+echo 0 > /sys/module/ged/parameters/ged_smart_boost 2>/dev/null
+
+echo "[*] Stopping Android graphics and framework..."
+stop vendor.hwcomposer-3-2 2>/dev/null
+stop
+
+# Wait until ALL Android processes completely exit and close Mali GPU
+echo "[*] Waiting for all processes to release Mali GPU..."
+for i in $(seq 1 40); do
+    if ! lsof /dev/mali* >/dev/null 2>&1; then
+        echo "[+] All Mali handles released cleanly!"
+        break
+    fi
+    sleep 0.3
+done
+if lsof /dev/mali* >/dev/null 2>&1; then
+    echo "[!] Killing remaining Mali processes..."
+    for pid in $(lsof /dev/mali* 2>/dev/null | awk 'NR>1 {print $2}' | sort -u); do
+        kill -9 "$pid" 2>/dev/null || true
+    done
+    sleep 0.5
+fi
+
+# Power GPU & Bind Panthor Driver for Linux HW Acceleration
+echo "[*] Powering GPU & binding Panthor..."
+echo power_on > /proc/gpufreqv2/mfgsys_power_control 2>/dev/null
+echo /data/local/tmp/panthor > /sys/module/firmware_class/parameters/path 2>/dev/null
+insmod /data/local/tmp/panthor/gpu-sched.ko 2>/dev/null || true
+insmod /data/local/tmp/panthor/panthor.ko 2>/dev/null || true
+echo 13000000.mali > /sys/bus/platform/drivers/mali/unbind 2>/dev/null || true
+echo 13000000.mali > /sys/bus/platform/drivers/panthor/bind 2>/dev/null || true
+chmod 666 /dev/dri/* "$PMOS_DIR/dev/dri/"* 2>/dev/null
 
 # 8. Enable AMOLED display and set comfortable brightness
-echo On > /sys/class/drm/card0-DSI-1/dpms 2>/dev/null
+chmod 666 /sys/class/drm/card0-DSI-1/dpms 2>/dev/null || true
+ echo On > /sys/class/drm/card0-DSI-1/dpms 2>/dev/null || true 2>/dev/null
 echo 2600 > /sys/devices/platform/display_id/brightnessid
 
 # Background brightness keeper
@@ -87,7 +126,7 @@ BRIGHT_PID=$!
 cat << 'CMD' > "$PMOS_DIR/usr/bin/android"
 #!/bin/sh
 echo "Returning to Android..."
-killall -9 phoc phosh squeekboard wvkbd
+killall -9 phoc phosh squeekboard phosh-osk-stevia wvkbd
 CMD
 chmod +x "$PMOS_DIR/usr/bin/android"
 
@@ -102,15 +141,12 @@ export TMP=/tmp
 export XDG_RUNTIME_DIR=/tmp/runtime-root
 export XDG_DATA_DIRS=/usr/share:/usr/local/share
 export WLR_RENDERER=gles2
-export WLR_RENDERER_ALLOW_SOFTWARE=1
-export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
-export WLR_DRM_DEVICES=/dev/dri/card0
+export WLR_DRM_DEVICES=/dev/dri/card0:/dev/dri/card1
 export SEATD_VTBOUND=0
 export LIBSEAT_BACKEND=seatd
 export GSETTINGS_BACKEND=keyfile
 export GSK_RENDERER=gl
-export LP_NUM_THREADS=4
 
 # Enable Hardware Speaker Routing, I2S Amplifiers & Volume
 amixer -c 0 cset name="Ext_Speaker_Amp Switch" 1 2>/dev/null
@@ -168,7 +204,7 @@ cp -f /usr/share/applications/sm.puri.OSK0.desktop /etc/xdg/autostart/sm.puri.OS
 
 dbus-run-session -- sh -c "
 trap \"\" HUP
-gsettings set org.gnome.desktop.interface enable-animations false 2>/dev/null
+gsettings set org.gnome.desktop.interface enable-animations true 2>/dev/null
 gsettings set org.gnome.desktop.session idle-delay 0 2>/dev/null
 gsettings set org.gnome.settings-daemon.plugins.power power-button-action \"nothing\" 2>/dev/null
 
@@ -179,17 +215,93 @@ gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true 2
 # Launch Phosh OSK (Stevia - native terminal, browser & GTK4 typing support)
 (sleep 2; phosh-osk-stevia --allow-replacement >/tmp/osk.log 2>&1) &
 
-phoc -C /etc/phoc.ini -E /usr/libexec/phosh >/tmp/phoc.log 2>&1
-" >/tmp/session.log 2>&1
+phoc -C /etc/phoc.ini -E /usr/libexec/phosh 2>&1 | tee /tmp/phoc.log
+" 2>&1 | tee /tmp/session.log
 '
 
 # 10. Clean up and restore Android automatically upon Phosh exit
 kill -9 "$BRIGHT_PID" 2>/dev/null
 pkill -9 -f "brightnessid" 2>/dev/null
-killall -9 phoc phosh squeekboard phosh-osk-stevia wvkbd seatd pipewire pipewire-pulse wireplumber 2>/dev/null
 
-# Restore Android display
-echo "[*] Restoring Android display..."
-pkill -CONT -f "composer@3.2" 2>/dev/null
-start vendor.hwcomposer-3-2
+echo "[*] Terminating all Linux chroot processes..."
+for pid in $(lsof /data/pmos 2>/dev/null | awk 'NR>1 {print $2}' | sort -u); do
+    kill -9 "$pid" 2>/dev/null || true
+done
+killall -9 phoc phosh squeekboard phosh-osk-stevia wvkbd seatd pipewire pipewire-pulse wireplumber dbus-daemon 2>/dev/null
+
+# Wait until ALL processes close DRM / Panthor GPU nodes completely
+echo "[*] Waiting for all processes to release Panthor GPU..."
+for i in $(seq 1 30); do
+    if ! lsof /dev/dri/render* /dev/dri/card1 >/dev/null 2>&1; then
+        echo "[+] Panthor GPU handles released cleanly!"
+        break
+    fi
+    sleep 0.3
+done
+if lsof /dev/dri/render* /dev/dri/card1 >/dev/null 2>&1; then
+    for pid in $(lsof /dev/dri/render* /dev/dri/card1 2>/dev/null | awk 'NR>1 {print $2}' | sort -u); do
+        kill -9 "$pid" 2>/dev/null || true
+    done
+    sleep 0.5
+fi
+
+echo "[*] Unbinding Panthor & rebinding Mali driver..."
+if [ -d /sys/bus/platform/drivers/panthor ]; then
+    echo 13000000.mali > /sys/bus/platform/drivers/panthor/unbind 2>/dev/null || true
+fi
+rmmod panthor 2>/dev/null || true
+rmmod gpu-sched 2>/dev/null || true
+
+# Restore original Android Mali CSF firmware path
+echo /vendor/firmware > /sys/module/firmware_class/parameters/path 2>/dev/null
+
+if [ -d /sys/bus/platform/drivers/mali ]; then
+    echo 13000000.mali > /sys/bus/platform/drivers/mali/bind 2>/dev/null || true
+fi
+sleep 1
+
+# Re-link /dev/mali0 to active Mali node, fix permissions & SELinux context
+MALI_DEV=$(ls -d /dev/mali* 2>/dev/null | grep -E 'mali[0-9]' | head -n 1)
+if [ -n "$MALI_DEV" ] && [ "$MALI_DEV" != "/dev/mali0" ]; then
+    rm -f /dev/mali0
+    ln -sf "$MALI_DEV" /dev/mali0
+fi
+chmod 666 /dev/mali* 2>/dev/null
+chown system:graphics /dev/mali* 2>/dev/null
+restorecon -F /dev/mali* 2>/dev/null
+chmod 666 /dev/pts/ptmx /dev/ptmx 2>/dev/null
+
+# Re-enable MediaTek GED GPU DVFS
+echo 1 > /sys/module/ged/parameters/gpu_dvfs_enable 2>/dev/null
+echo 1 > /sys/module/ged/parameters/ged_boost_enable 2>/dev/null
+echo 1 > /sys/module/ged/parameters/ged_smart_boost 2>/dev/null
+
+# Restore Android display & framework
+echo "[*] Restoring Android display and framework..."
+start vendor.hwcomposer-3-2 2>/dev/null
+start
+
+# Wait for SurfaceFlinger & Android framework to initialize
+echo "[*] Waiting for Android UI to become ready..."
+for i in $(seq 1 40); do
+    if lsof /dev/mali* 2>/dev/null | grep -q surfaceflinger; then
+        echo "[+] SurfaceFlinger is active on Mali GPU!"
+        break
+    fi
+    sleep 0.5
+done
+
+setprop service.bootanim.exit 1 2>/dev/null
+stop bootanim 2>/dev/null
+pkill -9 bootanimation 2>/dev/null
+
+# Ensure display is awake, unblanked, and keyguard dismissed
+echo "[*] Powering on display panel & waking keyguard..."
+echo 2000 > /sys/devices/platform/display_id/brightnessid 2>/dev/null
+echo 2000 > /sys/class/leds/lcd-backlight/brightness 2>/dev/null
+input keyevent KEYCODE_WAKEUP 2>/dev/null
+sleep 0.5
+wm dismiss-keyguard 2>/dev/null
+input keyevent 82 2>/dev/null
+
 echo "[+] Android display restored!"
