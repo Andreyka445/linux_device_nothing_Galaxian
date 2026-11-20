@@ -86,12 +86,9 @@ cd linux_device_nothing_Galaxian
   adb shell "su -c 'mv /data/local/tmp/start_phosh.sh /data/pmos_files/start_phosh.sh && mv /data/local/tmp/stop_phosh.sh /data/pmos_files/stop_phosh.sh && mv /data/local/tmp/linux_pmos.sh /data/pmos_files/linux && mv /data/local/tmp/android_pmos.sh /data/pmos_files/android && chmod +x /data/pmos_files/* && cp /data/local/tmp/linux_termux.sh /data/data/com.termux/files/usr/bin/linux && cp /data/local/tmp/android_termux.sh /data/data/com.termux/files/usr/bin/android && chmod +x /data/data/com.termux/files/usr/bin/linux /data/data/com.termux/files/usr/bin/android'"
   ```
 
-### Шаг 3: Получение и загрузка образа системы `pmos_phosh.img`
-
-Сам образ файловой системы postmarketOS весит ~3.2 ГБ в распакованном виде, поэтому в git-репозиторий он напрямую не коммитится. Получить его можно двумя способами:
+### Шаг 3: Образ системы `pmos_phosh.img`
 
 #### Вариант А: Скачать готовый образ (Рекомендуется для всех)
-1. Перейдите во вкладку [**Releases**](https://github.com/Andreyka445/linux_device_nothing_Galaxian/releases) этого репозитория.
 2. Скачайте архив релиза **`pmos_phosh.img.tar.gz`** (сжат всего до ~720 МБ).
 3. Распакуйте архив на компьютере (получится файл `pmos_phosh.img`).
 4. Поместите распакованный `pmos_phosh.img` в папку с проектом.
