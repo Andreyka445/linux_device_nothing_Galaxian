@@ -86,13 +86,34 @@ cd linux_device_nothing_Galaxian
   adb shell "su -c 'mv /data/local/tmp/start_phosh.sh /data/pmos_files/start_phosh.sh && mv /data/local/tmp/stop_phosh.sh /data/pmos_files/stop_phosh.sh && mv /data/local/tmp/linux_pmos.sh /data/pmos_files/linux && mv /data/local/tmp/android_pmos.sh /data/pmos_files/android && chmod +x /data/pmos_files/* && cp /data/local/tmp/linux_termux.sh /data/data/com.termux/files/usr/bin/linux && cp /data/local/tmp/android_termux.sh /data/data/com.termux/files/usr/bin/android && chmod +x /data/data/com.termux/files/usr/bin/linux /data/data/com.termux/files/usr/bin/android'"
   ```
 
-### Шаг 3: Размещение образа системы `pmos_phosh.img`
+### Шаг 3: Получение и загрузка образа системы `pmos_phosh.img`
 
-Поместите сформированный образ postmarketOS rootfs (`pmos_phosh.img`) в каталог:
-```text
-/data/pmos_files/pmos_phosh.img
-```
-*(Размер образа обычно составляет от 2.5 до 3.5 ГБ)*.
+Сам образ файловой системы postmarketOS весит ~3.2 ГБ в распакованном виде, поэтому в git-репозиторий он напрямую не коммитится. Получить его можно двумя способами:
+
+#### Вариант А: Скачать готовый образ (Рекомендуется для всех)
+1. Перейдите во вкладку [**Releases**](https://github.com/Andreyka445/linux_device_nothing_Galaxian/releases) этого репозитория.
+2. Скачайте архив релиза **`pmos_phosh.img.tar.gz`** (сжат всего до ~720 МБ).
+3. Распакуйте архив на компьютере (получится файл `pmos_phosh.img`).
+4. Поместите распакованный `pmos_phosh.img` в папку с проектом.
+5. Запустите `push_to_phone.bat` (он автоматически спросит «Залить образ на телефон? [Y/N]» и скопирует его), либо выполните вручную:
+   ```bash
+   adb push pmos_phosh.img /data/local/tmp/pmos_phosh.img
+   adb shell "su -c 'mv /data/local/tmp/pmos_phosh.img /data/pmos_files/pmos_phosh.img'"
+   ```
+
+#### Вариант Б: Собрать образ с нуля через pmbootstrap (Для разработчиков)
+Если вы хотите собрать чистый образ самостоятельно из исходников Alpine Linux / postmarketOS:
+1. Установите `pmbootstrap` в среде Linux / WSL.
+2. Инициализируйте сборку для целевого устройства:
+   ```bash
+   pmbootstrap init
+   pmbootstrap install --ui phosh
+   ```
+3. Запустите наш генератор loop-образа:
+   ```bash
+   sudo python3 scripts/make_phosh_img.py
+   ```
+   Скрипт создаст оптимизированный `ext4` образ `pmos_phosh.img` с меткой `pmOS_root`.
 
 ---
 
