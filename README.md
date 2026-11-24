@@ -1,13 +1,13 @@
-# 📱 Nothing Phone (2a) / Phone (3a) Lite: postmarketOS (Phosh Mobile GNOME)
+# 📱 Nothing Phone (3a) Lite: postmarketOS (Phosh Mobile GNOME)
 
 [![postmarketOS](https://img.shields.io/badge/postmarketOS-v24.06%20%2F%20edge-009900?logo=postmarketos&logoColor=white)](https://postmarketos.org/)
-[![Device](https://img.shields.io/badge/Device-Nothing%20Phone%20(2a)%20%2F%20Galaxian-black?logo=nothing&logoColor=white)](https://nothing.tech)
-[![SoC](https://img.shields.io/badge/SoC-MediaTek%20Dimensity%207200%20%2F%20MT6878-blue)](https://www.mediatek.com/)
+[![Device](https://img.shields.io/badge/Device-Nothing%20Phone%20(3a)%20Lite%20%2F%20Galaxian-black?logo=nothing&logoColor=white)](https://nothing.tech)
+[![SoC](https://img.shields.io/badge/SoC-MediaTek%20Dimensity%207300%20Pro%205G%20%2F%20MT6878-blue)](https://www.mediatek.com/)
 [![GPU](https://img.shields.io/badge/GPU%20Acceleration-Panthor%20GLES2%20(Mali--G615)-orange)](https://docs.kernel.org/gpu/panthor.html)
 [![Display](https://img.shields.io/badge/AMOLED-1084x2412%20%40%20120Hz-purple)](https://nothing.tech)
 [![License](https://img.shields.io/badge/License-GPL--3.0-brightgreen)](LICENSE)
 
-> **Standalone native postmarketOS Linux port running on the Nothing Phone (2a) (`galaxian` / MediaTek Dimensity 7200 / MT6878) with full Wayland GUI, open-source Panthor GPU acceleration, 120 Hz AMOLED display, multi-touch, on-screen keyboard, working Wi-Fi (2.4/5GHz), and physical button control.**
+> **Standalone native postmarketOS Linux port running on the Nothing Phone (3a) Lite (`galaxian` / MediaTek Dimensity 7300 Pro 5G / MT6878) with full Wayland GUI, open-source Panthor GPU acceleration, 120 Hz AMOLED display, multi-touch, on-screen keyboard, working Wi-Fi (2.4/5GHz), and physical button control.**
 
 ---
 
@@ -15,12 +15,13 @@
 
 * 🚀 **Full Hardware 3D Acceleration:** Open-source **Panthor DRM driver** (`/dev/dri/renderD128`) + **Mesa Panfrost GLES2** on ARM Mali-G615 MC2!
 * ⚡ **Super Smooth 120 Hz AMOLED:** Native DRM/KMS output (`card0-DSI-1`) rendered at full 1084x2412 @ 120 FPS.
+* 📦 **Super Partition Rootfs Integration:** Rootfs mapped directly into the Android `super` partition via `dm-linear` (`pmos_root` at sector offset `13914592` / byte offset `7124271104`) with automatic `losetup` fallback.
 * 📶 **Working Wi-Fi (2.4 & 5 GHz):** Full integration with MediaTek Gen4m connectivity driver, dynamic `/dev/wmtWifi`, NVRAM factory calibration streaming, NetworkManager, and WPA-PSK authentication dialog.
 * 🔒 **PolicyKit & Secret Service Integration:** Seamless network connection from Phosh UI with `gnome-keyring-daemon` secret storage.
 * 👆 **Flawless Multi-Touch:** FocalTech capacitive touchscreen (`fts_ts`) integrated with `libinput` via seat assignment.
 * ⌨️ **On-Screen Keyboard:** Native Stevia virtual keyboard (`phosh-osk-stevia`) popping up automatically on text input focus.
 * 💡 **Exponential Backlight & Sleep/Wake:** Custom kernel backlight driver (`galaxian_backlight.ko`) and daemon (`galaxian_helper_daemon.py`) for human-eye perceptual brightness and physical power/volume buttons.
-* 📦 **Standalone Boot:** Boots directly from an Android Header v4 signed `init_boot.img` with AVB 1.0 footer without Android or chroot.
+* 📦 **Standalone Boot:** Direct native boot from an Android Header v4 signed `init_boot.img` with AVB 1.0 footer without Android or chroot.
 
 ---
 
@@ -28,7 +29,9 @@
 
 | Subsystem | Status | Driver / Backend | Details |
 | :--- | :---: | :--- | :--- |
+| **Device Model** | 🟢 **Verified** | Nothing Phone (3a) Lite (`galaxian`) | MediaTek Dimensity 7300 Pro 5G (MT6878) |
 | **Boot Mode** | 🟢 **Working** | Android Header v4 `init_boot.img` | Standalone direct boot, AVB 1.0 signed footer |
+| **Rootfs Storage** | 🟢 **Working** | `dm-linear` on `/dev/block/by-name/super` | Sector 13914592 (offset 7124271104) / loop fallback |
 | **GPU Acceleration** | 🟢 **Working** | Panthor (`panthor.ko`) + Panfrost GLES2 | Mali-G615 MC2 hardware accelerated Wayland & apps |
 | **Display (AMOLED)** | 🟢 **Working** | MediaTek DRM (`card0-DSI-1`) | 1084x2412 @ 120 Hz, Bilinear scaling |
 | **Backlight Control** | 🟢 **Working** | `galaxian_backlight.ko` + daemon | Smooth exponential human-eye brightness curve |
@@ -60,10 +63,11 @@ For detailed step-by-step instructions, see **[Installation Guide](docs/INSTALL.
    fastboot flash init_boot images/init_boot.img
    ```
 
-3. **Flash the postmarketOS rootfs image:**
+3. **Flash the postmarketOS Rootfs into `super`:**
    ```bash
-   fastboot flash userdata pmos_rootfs.img
+   fastboot flash super pmos_super.img
    ```
+   *(The rootfs image contains the postmarketOS ext4 system mapped into the dynamic partition space of `super`)*.
 
 4. **Reboot:**
    ```bash
@@ -78,7 +82,7 @@ The device will boot directly into postmarketOS Phosh desktop.
 
 ```
 ├── docs/                   # Documentation and guides
-│   ├── INSTALL.md          # Step-by-step installation guide
+│   ├── INSTALL.md          # Step-by-step installation guide (super + init_boot)
 │   ├── PORT_SUMMARY.md     # Hardware port status summary
 │   └── HARDWARE_NOTES.md   # Deep technical hardware implementation notes
 ├── images/                 # Pre-built verified boot images
@@ -95,7 +99,7 @@ The device will boot directly into postmarketOS Phosh desktop.
 └── scripts/                # Packaging, flashing, and build scripts
     ├── build_init_boot.sh  # Ramdisk builder + Header v4/AVB packer
     ├── pack_init_boot.py   # Python AVB 1.0 signer and header packer
-    ├── init.sh             # Standalone initramfs init script
+    ├── init.sh             # Standalone initramfs init script (super dm-linear)
     └── flash_init_boot.py  # Fastboot & telnet live flasher
 ```
 
@@ -115,5 +119,5 @@ The script will assemble the cpio ramdisk, compress with LZ4, pack the Android H
 
 ## 🙏 Acknowledgements & References
 * [postmarketOS Project](https://postmarketos.org/)
-* [xxxvik-xakerxxx/nothing-tetris-pmaports](https://github.com/xxxvik-xakerxxx/nothing-tetris-pmaports) (sister device Dimensity 7300 port)
+* [xxxvik-xakerxxx/nothing-tetris-pmaports](https://github.com/xxxvik-xakerxxx/nothing-tetris-pmaports) (Nothing CMF Phone 1 Dimensity 7300 port)
 * [Panthor DRM Driver](https://docs.kernel.org/gpu/panthor.html)

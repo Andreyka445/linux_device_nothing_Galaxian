@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build script for Nothing Phone (2a) / Phone (3a) Lite (galaxian / MT6878)
+# Build script for Nothing Phone (3a) Lite (galaxian / MT6878 / Dimensity 7300 Pro 5G)
 # Packs ramdisk with Android Header v4 and AVB 1.0 footer
 set -e
 
@@ -10,7 +10,7 @@ OUT_DIR="${REPO_DIR}/images"
 OUT_IMG="${OUT_DIR}/init_boot.img"
 OUT_RD="${BUILD_DIR}/ramdisk.lz4"
 
-echo "=== Building standalone init_boot.img for Nothing Phone (2a) ==="
+echo "=== Building standalone init_boot.img for Nothing Phone (3a) Lite ==="
 mkdir -p "$BUILD_DIR" "$OUT_DIR"
 
 # Stage ramdisk structure

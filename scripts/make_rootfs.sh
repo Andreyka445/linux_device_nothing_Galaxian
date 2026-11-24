@@ -1,8 +1,8 @@
 #!/bin/bash
-# postmarketOS Rootfs creation guide and helper script for Nothing Phone (2a)
+# postmarketOS Rootfs creation guide and helper script for Nothing Phone (3a) Lite
 set -e
 
-echo "=== postmarketOS Rootfs Instructions for Nothing Phone (2a) ==="
+echo "=== postmarketOS Rootfs Instructions for Nothing Phone (3a) Lite ==="
 echo "1. Initialize pmbootstrap with aarch64 target:"
 echo "   pmbootstrap init"
 echo ""
@@ -14,3 +14,6 @@ echo "   pmbootstrap export"
 echo ""
 echo "4. Overlay the Galaxian hardware scripts into /sysroot:"
 echo "   cp -r overlay/* <mount_point>/"
+echo ""
+echo "5. Flash into super partition:"
+echo "   fastboot flash super pmos_super.img"

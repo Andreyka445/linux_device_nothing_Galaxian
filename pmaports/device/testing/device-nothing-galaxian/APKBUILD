@@ -1,6 +1,6 @@
 # Maintainer: Andreyka445 <https://github.com/Andreyka445>
 pkgname=device-nothing-galaxian
-pkgdesc="Nothing Phone (2a) / Phone (3a) Lite"
+pkgdesc="Nothing Phone (3a) Lite"
 pkgver=1.0
 pkgrel=1
 url="https://postmarketos.org"

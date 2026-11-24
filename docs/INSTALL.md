@@ -1,6 +1,6 @@
-# Installation Guide: postmarketOS on Nothing Phone (2a)
+# Installation Guide: postmarketOS on Nothing Phone (3a) Lite
 
-This guide walks you through flashing and running standalone postmarketOS (Phosh Desktop) on the Nothing Phone (2a) / Phone (3a) Lite (`galaxian`).
+This guide walks you through flashing and running standalone postmarketOS (Phosh Desktop) on the **Nothing Phone (3a) Lite** (`galaxian` / MediaTek Dimensity 7300 Pro 5G / MT6878).
 
 > [!WARNING]
 > Flashing custom operating systems carries inherent risks. Ensure your bootloader is unlocked and you have backed up important data before proceeding.
@@ -8,19 +8,19 @@ This guide walks you through flashing and running standalone postmarketOS (Phosh
 ---
 
 ## 📋 Requirements
-1. **Device:** Nothing Phone (2a) (`galaxian` / MT6878).
+1. **Device:** Nothing Phone (3a) Lite (`galaxian` / Dimensity 7300 Pro 5G / MT6878).
 2. **Unlocked Bootloader:** Standard Android bootloader unlocking enabled in Developer Options.
 3. **PC Tools:** `fastboot` and `adb` installed.
 4. **Partition Images:**
    - `init_boot.img` (provided in [images/init_boot.img](../images/init_boot.img)).
-   - `pmos_rootfs.img` (postmarketOS Phosh rootfs image, or built via pmbootstrap).
+   - `pmos_super.img` (the postmarketOS rootfs image assembled for the `super` partition).
 
 ---
 
 ## ⚡ Fastboot Flashing Steps
 
 ### Step 1: Boot device into Fastboot mode
-With the phone powered off, hold **Volume Down + Power** until the fastboot screen appears. Connect USB cable to your PC.
+With the phone powered off, hold **Volume Down + Power** until the fastboot screen appears. Connect the USB cable to your PC.
 
 Verify fastboot detection:
 ```bash
@@ -34,10 +34,10 @@ fastboot flash init_boot images/init_boot.img
 ```
 *(If prompted by slot selection, you can flash both slots: `fastboot flash init_boot_a images/init_boot.img` and `fastboot flash init_boot_b images/init_boot.img`)*.
 
-### Step 3: Flash postmarketOS Rootfs
-Flash the rootfs image into the target system partition (e.g. `userdata` or `super` partition mapped for PMOS):
+### Step 3: Flash postmarketOS into the `super` Partition
+Because Nothing Phone (3a) Lite uses dynamic partitions, postmarketOS rootfs is mapped directly into the `super` partition (offset `13914592` sectors / `7124271104` bytes) using `dm-linear` / `losetup`:
 ```bash
-fastboot flash userdata pmos_rootfs.img
+fastboot flash super pmos_super.img
 ```
 
 ### Step 4: Reboot into postmarketOS
@@ -45,7 +45,7 @@ fastboot flash userdata pmos_rootfs.img
 fastboot reboot
 ```
 
-The device will display the postmarketOS boot logo, initialize the Panthor Mali GPU, AMOLED display, and immediately launch the Phosh Wayland desktop with hardware acceleration.
+The device will display the postmarketOS boot logo, initialize the Panthor Mali GPU, map `pmos_root` from `super`, and immediately launch the Phosh Wayland desktop with hardware acceleration.
 
 ---
 

@@ -1,8 +1,10 @@
-# Port Status & Hardware Summary: Nothing Phone (2a)
+# Port Status & Hardware Summary: Nothing Phone (3a) Lite
 
 | Subsystem | Status | Driver / Implementation | Notes |
 | :--- | :---: | :--- | :--- |
+| **Device Model** | 🟢 **Verified** | Nothing Phone (3a) Lite (`galaxian`) | MediaTek Dimensity 7300 Pro 5G (MT6878) |
 | **Boot Mode** | 🟢 **Working** | Standalone Android Header v4 `init_boot.img` | Native boot, AVB 1.0 signed, direct PMOS boot |
+| **Rootfs Storage** | 🟢 **Working** | `dm-linear` on `/dev/block/by-name/super` | Sector 13914592 (offset 7124271104) / loop fallback |
 | **GPU 3D Acceleration** | 🟢 **Working** | Panthor DRM (`panthor.ko`) + Panfrost GLES2 | ARM Mali-G615 MC2 full hardware acceleration |
 | **Display Panel** | 🟢 **Working** | MediaTek DRM (`card0-DSI-1`) | 1084x2412 AMOLED, 120Hz refresh rate |
 | **Backlight Control** | 🟢 **Working** | Custom `galaxian_backlight.ko` + daemon | Smooth exponential human-eye curve, power-save dimming |
