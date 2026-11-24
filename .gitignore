@@ -1,6 +1,26 @@
-*.img
-*.iso
-*.tar.gz
+# Build & Temporary files
+*.o
+*.ko
+*.mod
+*.mod.c
+*.order
+*.symvers
 *.log
+*.tmp
+*.bak
+*.bak*
+*.tar.gz
+*.iso
+
+# OS files
 .DS_Store
 Thumbs.db
+__pycache__/
+*.pyc
+
+# Large partition images (except the standalone init_boot)
+*.img
+!images/init_boot.img
+
+# Build directories
+build_initboot_tmp/

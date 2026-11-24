@@ -1,0 +1,27 @@
+# Maintainer: Andreyka445 <https://github.com/Andreyka445>
+pkgname=linux-nothing-galaxian
+pkgver=6.1.162
+pkgrel=1
+pkgdesc="Nothing Phone (2a) kernel (MediaTek Dimensity 7200 / MT6878 + Panthor GPU)"
+arch="aarch64"
+_carch="arm64"
+_flavor="nothing-galaxian"
+url="https://github.com/Andreyka445"
+license="GPL-2.0-only"
+options="!strip !check"
+makedepends="
+	bash
+	bc
+	bison
+	devicepkg-dev
+	flex
+	kmod
+	openssl-dev
+	perl
+	python3
+"
+
+# Package provides GKI 6.1 kernel with Panthor DRM driver and Nothing Galaxian panel/touch drivers
+package() {
+	mkdir -p "$pkgdir"/boot
+}

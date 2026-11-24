@@ -1,0 +1,54 @@
+# Maintainer: Andreyka445 <https://github.com/Andreyka445>
+pkgname=device-nothing-galaxian
+pkgdesc="Nothing Phone (2a) / Phone (3a) Lite"
+pkgver=1.0
+pkgrel=1
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!archcheck"
+depends="
+	postmarketos-base
+	linux-nothing-galaxian
+	polkit
+	networkmanager
+	wpa_supplicant
+	gnome-keyring
+	seatd
+	mesa-panfrost
+"
+makedepends="devicepkg-dev"
+source="
+	deviceinfo
+	phoc.ini
+	00-galaxian-user.rules
+	start_phosh_direct.sh
+	phosh_session_start.sh
+	galaxian_wifi_bringup.sh
+	send_nvram.py
+	galaxian_helper_daemon.py
+"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+
+	install -Dm644 "$srcdir"/phoc.ini \
+		"$pkgdir"/etc/phosh/phoc.ini
+	install -Dm644 "$srcdir"/00-galaxian-user.rules \
+		"$pkgdir"/etc/polkit-1/rules.d/00-galaxian-user.rules
+
+	install -Dm755 "$srcdir"/start_phosh_direct.sh \
+		"$pkgdir"/usr/bin/start_phosh_direct.sh
+	install -Dm755 "$srcdir"/phosh_session_start.sh \
+		"$pkgdir"/usr/bin/phosh_session_start.sh
+	install -Dm755 "$srcdir"/galaxian_wifi_bringup.sh \
+		"$pkgdir"/usr/bin/galaxian_wifi_bringup.sh
+	install -Dm755 "$srcdir"/send_nvram.py \
+		"$pkgdir"/usr/bin/send_nvram.py
+	install -Dm755 "$srcdir"/galaxian_helper_daemon.py \
+		"$pkgdir"/usr/bin/galaxian_helper_daemon.py
+}
