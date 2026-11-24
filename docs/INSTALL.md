@@ -11,8 +11,9 @@ This guide walks you through flashing and running standalone postmarketOS (Phosh
 1. **Device:** Nothing Phone (3a) Lite (`galaxian` / Dimensity 7300 Pro 5G / MT6878).
 2. **Unlocked Bootloader:** Standard Android bootloader unlocking enabled in Developer Options.
 3. **PC Tools:** `fastboot` and `adb` installed.
-4. **Partition Images:**
+4. **Partition Images / Rootfs Archive:**
    - `init_boot.img` (provided in [images/init_boot.img](../images/init_boot.img)).
+   - `pmos-galaxian-rootfs.tar.gz` (available under [GitHub Releases](../../releases) with clean preconfigured postmarketOS Phosh rootfs, GPU drivers, Wi-Fi bringup, and APK repositories).
    - `pmos_super.img` (the postmarketOS rootfs image assembled for the `super` partition).
 
 ---
